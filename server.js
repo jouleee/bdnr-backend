@@ -12,6 +12,14 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.log(err));
 
+// Import routes
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
+
+// Use routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+
 // Routing percobaan
 app.get("/", (req, res) => {
   res.send("Backend is running...");
