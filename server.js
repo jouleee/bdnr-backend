@@ -17,12 +17,16 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const jadwalRoutes = require('./routes/jadwal');
 const adminJadwalRoutes = require('./routes/admin/jadwal');
+const pemesananRoutes = require('./routes/pemesanan');
+const testRoutes = require('./routes/test');
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/jadwal', jadwalRoutes);
 app.use('/api/admin/jadwal', adminJadwalRoutes);
+app.use('/api/pemesanan', pemesananRoutes);
+app.use('/api/test', testRoutes);
 
 // Routing percobaan
 app.get("/", (req, res) => {
