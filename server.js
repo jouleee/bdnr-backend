@@ -15,10 +15,14 @@ mongoose.connect(process.env.MONGO_URI)
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const jadwalRoutes = require('./routes/jadwal');
+const adminJadwalRoutes = require('./routes/admin/jadwal');
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/jadwal', jadwalRoutes);
+app.use('/api/admin/jadwal', adminJadwalRoutes);
 
 // Routing percobaan
 app.get("/", (req, res) => {
