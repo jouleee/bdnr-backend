@@ -1,6 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { getProfile, updateProfile } = require('../controllers/userController');
+const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -15,21 +16,17 @@ const updateProfileValidation = [
     .optional()
     .trim()
     .matches(/^[0-9+\-\s]+$/)
-    .withMessage('Please enter a valid phone number'),
-  body('role')
-    .optional()
-    .isIn(['customer', 'admin'])
-    .withMessage('Role must be either customer or admin')
+    .withMessage('Please enter a valid phone number')
 ];
 
 // @route   GET /api/users/:id
 // @desc    Get user profile by ID
-// @access  Public
-router.get('/:id', getProfile);
+// @access  Private (requires authentication)
+router.get('/:id', auth, getProfile);
 
 // @route   PUT /api/users/:id
 // @desc    Update user profile by ID
-// @access  Public
-router.put('/:id', updateProfileValidation, updateProfile);
+// @access  Private (requires authentication, own profile only)
+router.put('/:id', auth, updateProfileValidation, updateProfile);
 
 module.exports = router;

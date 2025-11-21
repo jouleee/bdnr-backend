@@ -1,5 +1,15 @@
 const { validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+
+// Generate JWT Token
+const generateToken = (userId, role) => {
+  return jwt.sign(
+    { userId, role },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' } // Token valid for 7 days
+  );
+};
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -18,8 +28,14 @@ const register = async (req, res) => {
 
     const { name, email, password, phone, role } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user already exists (case-insensitive)
+    const existingUser = await User.findOne({ 
+      email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') } 
+    });
+    
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -27,22 +43,32 @@ const register = async (req, res) => {
       });
     }
 
+    // Prevent non-admin from creating admin accounts
+    const userRole = (role === 'admin' && process.env.ALLOW_ADMIN_REGISTRATION !== 'true') 
+      ? 'customer' 
+      : (role || 'customer');
+
     // Create new user
     const user = new User({
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       password,
-      phone,
-      role: role || 'customer'
+      phone: phone.trim(),
+      role: userRole
     });
 
     await user.save();
+
+    // Generate JWT token for auto-login after registration
+    const token = generateToken(user._id, user.role);
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       data: {
-        user: user.toJSON()
+        user: user.toJSON(),
+        token,
+        expiresIn: 7 * 24 * 60 * 60 // 7 days in seconds
       }
     });
   } catch (error) {
@@ -79,10 +105,17 @@ const login = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Check if user exists
-    const user = await User.findOne({ email });
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if user exists (case-insensitive)
+    const user = await User.findOne({ 
+      email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') } 
+    });
+    
     if (!user) {
-      return res.status(400).json({
+      // Generic error message to prevent email enumeration
+      return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
@@ -91,17 +124,29 @@ const login = async (req, res) => {
     // Check password
     const isPasswordMatch = await user.comparePassword(password);
     if (!isPasswordMatch) {
-      return res.status(400).json({
+      // Log failed login attempt (untuk monitoring)
+      console.warn(`Failed login attempt for email: ${normalizedEmail}`);
+      
+      return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
 
+    // Generate JWT token
+    const token = generateToken(user._id, user.role);
+
+    // Update last login (optional, add field to User model if needed)
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+
     res.json({
       success: true,
       message: 'Login successful',
       data: {
-        user: user.toJSON()
+        user: user.toJSON(),
+        token,
+        expiresIn: 7 * 24 * 60 * 60 // 7 days in seconds
       }
     });
   } catch (error) {

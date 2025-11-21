@@ -3,10 +3,18 @@ const User = require('../models/User');
 
 // @desc    Get user profile by user ID
 // @route   GET /api/users/:id
-// @access  Public
+// @access  Private
 const getProfile = async (req, res) => {
   try {
     const userId = req.params.id;
+    
+    // Check if user is accessing their own profile or is admin
+    if (req.user._id.toString() !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You can only view your own profile.'
+      });
+    }
     
     const user = await User.findById(userId);
     
@@ -21,7 +29,7 @@ const getProfile = async (req, res) => {
       success: true,
       message: 'Profile retrieved successfully',
       data: {
-        user: user
+        user: user.toJSON()
       }
     });
   } catch (error) {
@@ -35,7 +43,7 @@ const getProfile = async (req, res) => {
 
 // @desc    Update user profile
 // @route   PUT /api/users/:id
-// @access  Public
+// @access  Private
 const updateProfile = async (req, res) => {
   try {
     // Check for validation errors
@@ -48,14 +56,21 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    const { name, phone, role } = req.body;
+    const { name, phone } = req.body;
     const userId = req.params.id;
+
+    // Check if user is updating their own profile or is admin
+    if (req.user._id.toString() !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. You can only update your own profile.'
+      });
+    }
 
     // Buat object untuk update (hanya field yang dikirim)
     const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (phone !== undefined) updateData.phone = phone;
-    if (role !== undefined) updateData.role = role;
+    if (name !== undefined) updateData.name = name.trim();
+    if (phone !== undefined) updateData.phone = phone.trim();
 
     // Update user
     const updatedUser = await User.findByIdAndUpdate(
@@ -78,7 +93,7 @@ const updateProfile = async (req, res) => {
       success: true,
       message: 'Profile updated successfully',
       data: {
-        user: updatedUser
+        user: updatedUser.toJSON()
       }
     });
   } catch (error) {

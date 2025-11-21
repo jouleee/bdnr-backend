@@ -1,8 +1,13 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { createJadwal, updateJadwal, deleteJadwal } = require('../../controllers/jadwalController');
+const { auth, adminAuth } = require('../../middleware/auth');
 
 const router = express.Router();
+
+// Apply authentication and admin authorization to all routes
+router.use(auth);
+router.use(adminAuth);
 
 // Validation rules for creating jadwal
 const createJadwalValidation = [

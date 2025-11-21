@@ -69,10 +69,23 @@ jadwalSchema.pre('save', async function(next) {
         
         if (armada.tipe_kendaraan === 'BUS') {
           // Layout BUS: 4 kursi per baris (2-2), dengan nomor A1, A2, B1, B2, dst
-          const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-          let kursiIndex = 1;
+          // Generate row letters dynamically based on capacity
+          const numRows = Math.ceil(kapasitas / 4);
+          const rows = [];
+          for (let i = 0; i < numRows; i++) {
+            if (i < 26) {
+              // A-Z
+              rows.push(String.fromCharCode(65 + i));
+            } else {
+              // AA, AB, AC, etc.
+              const firstLetter = String.fromCharCode(65 + Math.floor(i / 26) - 1);
+              const secondLetter = String.fromCharCode(65 + (i % 26));
+              rows.push(firstLetter + secondLetter);
+            }
+          }
           
-          for (let i = 0; i < Math.ceil(kapasitas / 4); i++) {
+          let kursiIndex = 1;
+          for (let i = 0; i < numRows; i++) {
             for (let j = 1; j <= 4 && kursiIndex <= kapasitas; j++) {
               petaKursi.push({
                 nomor_kursi: `${rows[i]}${j}`,

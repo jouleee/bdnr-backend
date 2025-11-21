@@ -138,15 +138,14 @@ module.exports = seedJadwal;
 // Run seeder if called directly
 if (require.main === module) {
   require('dotenv').config();
-  require('../config/database');
+  const connectDB = require('../config/database');
   
-  seedJadwal()
-    .then(() => {
-      console.log('✅ Seeding completed');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Seeding failed:', error);
-      process.exit(1);
-    });
+  connectDB().then(async () => {
+    await seedJadwal();
+    console.log('✅ Seeding completed');
+    process.exit(0);
+  }).catch((error) => {
+    console.error('❌ Seeding failed:', error);
+    process.exit(1);
+  });
 }

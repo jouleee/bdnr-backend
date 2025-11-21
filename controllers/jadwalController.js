@@ -17,6 +17,15 @@ const getAllJadwal = async (req, res) => {
       limit = 10
     } = req.query;
 
+    console.log('🔍 Received query params:', {
+      lokasi_keberangkatan,
+      lokasi_tujuan,
+      tanggal_keberangkatan,
+      status_jadwal,
+      page,
+      limit
+    });
+
     // Build filter object - start with empty filter to get all jadwal
     const filter = {};
     
@@ -25,6 +34,17 @@ const getAllJadwal = async (req, res) => {
       filter.status_jadwal = status_jadwal;
     }
 
+    // Add date filter on Jadwal (waktu_keberangkatan) if provided
+    // Use Indonesia timezone (GMT+7) to match user's local date
+    if (tanggal_keberangkatan) {
+      // Create date at midnight Indonesia time (GMT+7)
+      const startDate = new Date(tanggal_keberangkatan + 'T00:00:00+07:00');
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 1);
+      filter.waktu_keberangkatan = { $gte: startDate, $lt: endDate };
+    }
+
+    // Build rute filter (without date)
     const ruteFilter = {};
 
     if (lokasi_keberangkatan) {
@@ -33,12 +53,9 @@ const getAllJadwal = async (req, res) => {
     if (lokasi_tujuan) {
       ruteFilter.lokasi_tujuan = new RegExp(lokasi_tujuan, 'i');
     }
-    if (tanggal_keberangkatan) {
-      const startDate = new Date(tanggal_keberangkatan);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 1);
-      ruteFilter.tanggal_keberangkatan = { $gte: startDate, $lt: endDate };
-    }
+
+    console.log('🔎 Rute filter:', JSON.stringify(ruteFilter, null, 2));
+    console.log('📅 Jadwal filter:', JSON.stringify(filter, null, 2));
 
     // If we have rute filters, first find matching rutes
     let ruteIds = [];
@@ -46,8 +63,11 @@ const getAllJadwal = async (req, res) => {
       const rutes = await Rute.find(ruteFilter).select('_id');
       ruteIds = rutes.map(rute => rute._id);
       
+      console.log(`📍 Found ${rutes.length} matching rutes`);
+      
       // If no rutes found with the filter, return empty result
       if (ruteIds.length === 0) {
+        console.log('❌ No matching rutes found');
         return res.json({
           success: true,
           message: 'No jadwal found matching the criteria',
@@ -66,7 +86,7 @@ const getAllJadwal = async (req, res) => {
       filter.rute_id = { $in: ruteIds };
     }
 
-    console.log('Filter applied:', JSON.stringify(filter, null, 2));
+    console.log('✅ Final filter applied:', JSON.stringify(filter, null, 2));
 
     // Calculate pagination
     const skip = (page - 1) * limit;
@@ -82,8 +102,7 @@ const getAllJadwal = async (req, res) => {
     // Get total count for pagination
     const total = await Jadwal.countDocuments(filter);
 
-    console.log('Found jadwals:', jadwals.length);
-    console.log('Total count:', total);
+    console.log(`✅ Found ${jadwals.length} jadwals out of ${total} total`);
 
     res.json({
       success: true,
@@ -154,9 +173,16 @@ const getJadwalById = async (req, res) => {
 // @access  Public (for now, would be admin only in production)
 const createJadwal = async (req, res) => {
   try {
+    console.log('📝 CREATE JADWAL REQUEST:', {
+      user: req.user?.email,
+      role: req.user?.role,
+      body: req.body
+    });
+    
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation error',
@@ -169,6 +195,7 @@ const createJadwal = async (req, res) => {
     // Verify rute exists
     const rute = await Rute.findById(rute_id);
     if (!rute) {
+      console.log('❌ Rute not found:', rute_id);
       return res.status(404).json({
         success: false,
         message: 'Rute not found'
@@ -178,6 +205,7 @@ const createJadwal = async (req, res) => {
     // Verify armada exists and is active
     const armada = await Armada.findById(armada_id);
     if (!armada) {
+      console.log('❌ Armada not found:', armada_id);
       return res.status(404).json({
         success: false,
         message: 'Armada not found'
@@ -185,6 +213,7 @@ const createJadwal = async (req, res) => {
     }
 
     if (armada.status !== 'AKTIF') {
+      console.log('❌ Armada not active:', armada.status);
       return res.status(400).json({
         success: false,
         message: 'Armada is not active'
@@ -220,6 +249,8 @@ const createJadwal = async (req, res) => {
     await jadwal.populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan tanggal_keberangkatan');
     await jadwal.populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');
 
+    console.log('✅ Jadwal created successfully:', jadwal._id);
+
     res.status(201).json({
       success: true,
       message: 'Jadwal created successfully',
@@ -228,7 +259,7 @@ const createJadwal = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Create jadwal error:', error);
+    console.error('❌ Create jadwal error:', error);
     
     if (error.name === 'ValidationError') {
       return res.status(400).json({

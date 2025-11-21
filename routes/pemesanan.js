@@ -8,6 +8,7 @@ const {
   cancelPemesanan,
   getUserPemesanan
 } = require('../controllers/pemesananController');
+const { auth, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -134,13 +135,14 @@ router.get('/jadwal/:jadwalId/seats',
 
 // @route   POST /api/pemesanan
 // @desc    Create new pemesanan
-// @access  Public
-router.post('/', createPemesananValidation, createPemesanan);
+// @access  Private (requires authentication)
+router.post('/', auth, createPemesananValidation, createPemesanan);
 
 // @route   GET /api/pemesanan/user/:userId
 // @desc    Get user's pemesanan history
-// @access  Public
+// @access  Private (requires authentication)
 router.get('/user/:userId', 
+  auth,
   param('userId').isMongoId().withMessage('Invalid user ID'),
   userHistoryValidation,
   getUserPemesanan
@@ -148,13 +150,14 @@ router.get('/user/:userId',
 
 // @route   GET /api/pemesanan/:identifier
 // @desc    Get pemesanan by ID or booking code
-// @access  Public
-router.get('/:identifier', getPemesanan);
+// @access  Private (requires authentication)
+router.get('/:identifier', auth, getPemesanan);
 
 // @route   POST /api/pemesanan/:id/payment
 // @desc    Process payment for pemesanan
-// @access  Public
+// @access  Private (requires authentication)
 router.post('/:id/payment',
+  auth,
   param('id').isMongoId().withMessage('Invalid pemesanan ID'),
   paymentValidation,
   processPayment
@@ -162,8 +165,9 @@ router.post('/:id/payment',
 
 // @route   POST /api/pemesanan/:id/cancel
 // @desc    Cancel pemesanan
-// @access  Public
+// @access  Private (requires authentication)
 router.post('/:id/cancel',
+  auth,
   param('id').isMongoId().withMessage('Invalid pemesanan ID'),
   cancelValidation,
   cancelPemesanan
