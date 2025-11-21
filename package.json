@@ -10,7 +10,8 @@
     "seed": "node seeders/index.js",
     "seed:rute": "node seeders/ruteSeeder.js",
     "seed:armada": "node seeders/armadaSeeder.js",
-    "seed:jadwal": "node seeders/jadwalSeeder.js"
+    "seed:jadwal": "node seeders/jadwalSeeder.js",
+    "update:seats": "node seeders/updateSeats.js"
   },
   "keywords": [],
   "author": "",

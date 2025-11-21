@@ -3,6 +3,45 @@ const Jadwal = require('../models/Jadwal');
 const Rute = require('../models/Rute');
 const Armada = require('../models/Armada');
 
+// Function to generate seat map based on vehicle type
+const generateSeatMap = (tipeKendaraan, kapasitas) => {
+  const petaKursi = [];
+
+  if (tipeKendaraan === 'BUS') {
+    // Layout BUS: 4 kursi per baris (2-2), dengan nomor A1, A2, B1, B2, dst
+    const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'];
+    let kursiIndex = 1;
+    
+    for (let i = 0; i < rows.length && kursiIndex <= kapasitas; i++) {
+      for (let j = 1; j <= 4 && kursiIndex <= kapasitas; j++) {
+        petaKursi.push({
+          nomor_kursi: `${rows[i]}${j}`,
+          status_kursi: 'TERSEDIA'
+        });
+        kursiIndex++;
+      }
+    }
+  } else if (tipeKendaraan === 'MINI_BUS' || tipeKendaraan === 'TRAVEL') {
+    // Layout MINI_BUS/TRAVEL: nomor berurutan 1, 2, 3, dst
+    for (let i = 1; i <= kapasitas; i++) {
+      petaKursi.push({
+        nomor_kursi: i.toString(),
+        status_kursi: 'TERSEDIA'
+      });
+    }
+  } else {
+    // Layout default: nomor berurutan
+    for (let i = 1; i <= kapasitas; i++) {
+      petaKursi.push({
+        nomor_kursi: i.toString(),
+        status_kursi: 'TERSEDIA'
+      });
+    }
+  }
+
+  return petaKursi;
+};
+
 const seedJadwal = async () => {
   try {
     console.log('🌱 Starting jadwal seeding...');
@@ -48,13 +87,18 @@ const seedJadwal = async () => {
         const [hours, minutes] = waktu.split(':');
         waktuKeberangkatan.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
+        // Generate seat map based on vehicle type
+        const petaKursi = generateSeatMap(armada.tipe_kendaraan, armada.kapasitas);
+
         jadwalData.push({
           rute_id: rute._id,
           armada_id: armada._id,
           waktu_keberangkatan: waktuKeberangkatan,
           estimasi_waktu_perjalanan: estimasi,
           harga_dasar: harga,
-          status_jadwal: 'AKTIF'
+          status_jadwal: 'AKTIF',
+          kursi_tersedia: armada.kapasitas,
+          peta_kursi: petaKursi
         });
       }
     }
@@ -77,6 +121,7 @@ const seedJadwal = async () => {
       console.log(`   Time: ${jadwal.waktu_keberangkatan.toTimeString().slice(0, 8)}`);
       console.log(`   Price: Rp ${jadwal.harga_dasar.toLocaleString()}`);
       console.log(`   Available Seats: ${jadwal.kursi_tersedia}/${jadwal.armada_id.kapasitas}`);
+      console.log(`   Seat Map: ${jadwal.peta_kursi ? jadwal.peta_kursi.slice(0, 5).map(k => k.nomor_kursi).join(', ') + '...' : 'Not available'}`);
       console.log('');
     });
 
