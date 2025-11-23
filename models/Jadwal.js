@@ -25,11 +25,6 @@ const jadwalSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
-  status_jadwal: {
-    type: String,
-    enum: ['AKTIF', 'BATAL', 'SELESAI', 'DELAY'],
-    default: 'AKTIF'
-  },
   kursi_tersedia: {
     type: Number,
     min: 0
@@ -161,7 +156,6 @@ jadwalSchema.methods.getAvailableSeats = function() {
 // Index untuk optimasi query
 jadwalSchema.index({ waktu_keberangkatan: 1 });
 jadwalSchema.index({ rute_id: 1, waktu_keberangkatan: 1 });
-jadwalSchema.index({ status_jadwal: 1 });
 jadwalSchema.index({ 'peta_kursi.pemesanan_id': 1 });
 
 module.exports = mongoose.model("Jadwal", jadwalSchema, "jadwal");

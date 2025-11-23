@@ -12,7 +12,6 @@ const getAllJadwal = async (req, res) => {
       lokasi_keberangkatan,
       lokasi_tujuan,
       tanggal_keberangkatan,
-      status_jadwal,
       page = 1,
       limit = 10
     } = req.query;
@@ -21,18 +20,12 @@ const getAllJadwal = async (req, res) => {
       lokasi_keberangkatan,
       lokasi_tujuan,
       tanggal_keberangkatan,
-      status_jadwal,
       page,
       limit
     });
 
     // Build filter object - start with empty filter to get all jadwal
     const filter = {};
-    
-    // Only add status filter if explicitly provided
-    if (status_jadwal) {
-      filter.status_jadwal = status_jadwal;
-    }
 
     // Add date filter on Jadwal (waktu_keberangkatan) if provided
     // Use Indonesia timezone (GMT+7) to match user's local date
@@ -223,8 +216,7 @@ const createJadwal = async (req, res) => {
     // Check for conflicting schedules (same armada at same time)
     const conflictingSchedule = await Jadwal.findOne({
       armada_id,
-      waktu_keberangkatan: new Date(waktu_keberangkatan),
-      status_jadwal: { $in: ['AKTIF', 'DELAY'] }
+      waktu_keberangkatan: new Date(waktu_keberangkatan)
     });
 
     if (conflictingSchedule) {
@@ -295,7 +287,7 @@ const updateJadwal = async (req, res) => {
     }
 
     const jadwalId = req.params.id;
-    const { rute_id, armada_id, waktu_keberangkatan, estimasi_waktu_perjalanan, harga_dasar, status_jadwal } = req.body;
+    const { rute_id, armada_id, waktu_keberangkatan, estimasi_waktu_perjalanan, harga_dasar } = req.body;
 
     // Find existing jadwal
     const existingJadwal = await Jadwal.findById(jadwalId);
@@ -313,7 +305,6 @@ const updateJadwal = async (req, res) => {
     if (waktu_keberangkatan !== undefined) updateData.waktu_keberangkatan = new Date(waktu_keberangkatan);
     if (estimasi_waktu_perjalanan !== undefined) updateData.estimasi_waktu_perjalanan = estimasi_waktu_perjalanan;
     if (harga_dasar !== undefined) updateData.harga_dasar = harga_dasar;
-    if (status_jadwal !== undefined) updateData.status_jadwal = status_jadwal;
 
     // Verify references if being updated
     if (rute_id) {

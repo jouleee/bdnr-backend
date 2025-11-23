@@ -112,6 +112,14 @@ const createPemesanan = async (req, res) => {
 
     const jumlahPenumpang = daftar_penumpang.length;
 
+    // Check maximum passengers per booking (4)
+    if (jumlahPenumpang > 4) {
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum 4 passengers per booking'
+      });
+    }
+
     // Check seat availability
     if (jadwal.kursi_tersedia < jumlahPenumpang) {
       return res.status(400).json({

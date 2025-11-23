@@ -102,7 +102,7 @@ const pemesananSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1,
-    max: 6 // Maksimal 6 penumpang per booking
+    max: 4 // Maksimal 4 penumpang per booking
   },
   total_harga: {
     type: Number,
