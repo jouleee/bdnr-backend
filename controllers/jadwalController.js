@@ -24,17 +24,31 @@ const getAllJadwal = async (req, res) => {
       limit
     });
 
-    // Build filter object - start with empty filter to get all jadwal
+    // Build filter object - start with active jadwal filter
     const filter = {};
-
-    // Add date filter on Jadwal (waktu_keberangkatan) if provided
-    // Use Indonesia timezone (GMT+7) to match user's local date
+    
+    // Filter jadwal aktif: hanya 7 hari ke depan dari sekarang
+    const now = new Date();
+    const maxDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    // Add date filter on Jadwal (waktu_keberangkatan)
     if (tanggal_keberangkatan) {
       // Create date at midnight Indonesia time (GMT+7)
       const startDate = new Date(tanggal_keberangkatan + 'T00:00:00+07:00');
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + 1);
-      filter.waktu_keberangkatan = { $gte: startDate, $lt: endDate };
+      
+      // Combine dengan filter jadwal aktif
+      filter.waktu_keberangkatan = { 
+        $gte: Math.max(startDate, now), // Tidak boleh di masa lalu
+        $lt: Math.min(endDate, maxDate) // Tidak boleh lebih dari 7 hari
+      };
+    } else {
+      // Default filter: jadwal aktif saja
+      filter.waktu_keberangkatan = { 
+        $gte: now,
+        $lte: maxDate
+      };
     }
 
     // Build rute filter (without date)
