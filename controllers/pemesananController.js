@@ -77,7 +77,6 @@ const createPemesanan = async (req, res) => {
     const { 
       user_pemesan_id, 
       jadwal_id, 
-      kontak_darurat,
       daftar_penumpang,
       catatan
     } = req.body;
@@ -103,12 +102,13 @@ const createPemesanan = async (req, res) => {
       });
     }
 
-    if (jadwal.status_jadwal !== 'AKTIF') {
-      return res.status(400).json({
-        success: false,
-        message: 'Jadwal is not active'
-      });
-    }
+    // Skip jadwal status check since model doesn't have status_jadwal field
+    // if (jadwal.status_jadwal !== 'AKTIF') {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Jadwal is not active'
+    //   });
+    // }
 
     const jumlahPenumpang = daftar_penumpang.length;
 
@@ -156,7 +156,6 @@ const createPemesanan = async (req, res) => {
     const pemesananData = {
       user_pemesan_id,
       jadwal_id,
-      kontak_darurat,
       daftar_penumpang,
       harga_per_tiket: hargaPerTiket,
       jumlah_penumpang: jumlahPenumpang,

@@ -10,21 +10,21 @@ const penumpangSchema = new mongoose.Schema({
   tipe_identitas: {
     type: String,
     enum: ['KTP', 'SIM', 'PASPOR', 'KARTU_PELAJAR'],
-    required: true
+    required: false
   },
   nomor_identitas: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   tanggal_lahir: {
     type: Date,
-    required: true
+    required: false
   },
   jenis_kelamin: {
     type: String,
     enum: ['L', 'P'],
-    required: true
+    required: false
   },
   nomor_telepon: {
     type: String,
@@ -69,21 +69,21 @@ const pemesananSchema = new mongoose.Schema({
     required: true
   },
   
-  // Data kontak untuk konfirmasi
+  // Data kontak untuk konfirmasi (optional)
   kontak_darurat: {
     nama: {
       type: String,
-      required: true,
+      required: false,
       trim: true
     },
     nomor_telepon: {
       type: String,
-      required: true,
+      required: false,
       trim: true
     },
     email: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       lowercase: true
     }

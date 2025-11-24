@@ -14,24 +14,24 @@ const router = express.Router();
 
 // Validation for penumpang data
 const penumpangValidation = [
-  body('daftar_penumpang').isArray({ min: 1, max: 6 }).withMessage('Must provide 1-6 passengers'),
+  body('daftar_penumpang').isArray({ min: 1, max: 4 }).withMessage('Must provide 1-4 passengers'),
   body('daftar_penumpang.*.nama_lengkap')
     .notEmpty()
     .withMessage('Passenger full name is required')
     .isLength({ min: 2, max: 100 })
     .withMessage('Full name must be between 2-100 characters'),
   body('daftar_penumpang.*.tipe_identitas')
+    .optional()
     .isIn(['KTP', 'SIM', 'PASPOR', 'KARTU_PELAJAR'])
     .withMessage('Identity type must be KTP, SIM, PASPOR, or KARTU_PELAJAR'),
   body('daftar_penumpang.*.nomor_identitas')
-    .notEmpty()
-    .withMessage('Identity number is required')
-    .isLength({ min: 5, max: 30 })
-    .withMessage('Identity number must be between 5-30 characters'),
+    .optional({ nullable: true, checkFalsy: true }),
   body('daftar_penumpang.*.tanggal_lahir')
+    .optional()
     .isISO8601()
     .withMessage('Birth date must be in valid date format'),
   body('daftar_penumpang.*.jenis_kelamin')
+    .optional()
     .isIn(['L', 'P'])
     .withMessage('Gender must be L or P'),
   body('daftar_penumpang.*.nomor_kursi')
@@ -39,7 +39,7 @@ const penumpangValidation = [
     .withMessage('Seat number is required'),
   body('daftar_penumpang.*.nomor_telepon')
     .optional()
-    .isMobilePhone('id-ID')
+    .matches(/^(\+62|62|0)[0-9]{8,12}$/)
     .withMessage('Please provide valid Indonesian phone number'),
   body('daftar_penumpang.*.email')
     .optional()
@@ -60,18 +60,15 @@ const createPemesananValidation = [
     .isMongoId()
     .withMessage('Jadwal ID must be valid MongoDB ObjectId'),
   body('kontak_darurat.nama')
-    .notEmpty()
-    .withMessage('Emergency contact name is required')
+    .optional()
     .isLength({ min: 2, max: 100 })
     .withMessage('Emergency contact name must be between 2-100 characters'),
   body('kontak_darurat.nomor_telepon')
-    .notEmpty()
-    .withMessage('Emergency contact phone is required')
-    .isMobilePhone('id-ID')
+    .optional()
+    .matches(/^(\+62|62|0)[0-9]{8,12}$/)
     .withMessage('Please provide valid Indonesian phone number'),
   body('kontak_darurat.email')
-    .notEmpty()
-    .withMessage('Emergency contact email is required')
+    .optional()
     .isEmail()
     .withMessage('Please provide valid email address'),
   body('catatan')
