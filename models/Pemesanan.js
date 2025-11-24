@@ -1,39 +1,11 @@
 const mongoose = require("mongoose");
 
-// Schema untuk data penumpang individual
+// Schema untuk data penumpang individual - simplified
 const penumpangSchema = new mongoose.Schema({
   nama_lengkap: {
     type: String,
     required: true,
     trim: true
-  },
-  tipe_identitas: {
-    type: String,
-    enum: ['KTP', 'SIM', 'PASPOR', 'KARTU_PELAJAR'],
-    required: false
-  },
-  nomor_identitas: {
-    type: String,
-    required: false,
-    trim: true
-  },
-  tanggal_lahir: {
-    type: Date,
-    required: false
-  },
-  jenis_kelamin: {
-    type: String,
-    enum: ['L', 'P'],
-    required: false
-  },
-  nomor_telepon: {
-    type: String,
-    trim: true
-  },
-  email: {
-    type: String,
-    trim: true,
-    lowercase: true
   },
   nomor_kursi: {
     type: String,
@@ -165,9 +137,9 @@ pemesananSchema.pre('validate', function(next) {
     this.kode_booking = `TRV${timestamp}${randomStr}`;
   }
   
-  // Set batas_waktu_pembayaran if not exists (24 hours from now)
+  // Set batas_waktu_pembayaran if not exists (2 hours from now)
   if (!this.batas_waktu_pembayaran) {
-    this.batas_waktu_pembayaran = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    this.batas_waktu_pembayaran = new Date(Date.now() + 2 * 60 * 60 * 1000);
   }
   
   next();

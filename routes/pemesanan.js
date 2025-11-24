@@ -12,7 +12,7 @@ const { auth, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Validation for penumpang data
+// Validation for penumpang data - simplified
 const penumpangValidation = [
   body('daftar_penumpang').isArray({ min: 1, max: 4 }).withMessage('Must provide 1-4 passengers'),
   body('daftar_penumpang.*.nama_lengkap')
@@ -20,31 +20,9 @@ const penumpangValidation = [
     .withMessage('Passenger full name is required')
     .isLength({ min: 2, max: 100 })
     .withMessage('Full name must be between 2-100 characters'),
-  body('daftar_penumpang.*.tipe_identitas')
-    .optional()
-    .isIn(['KTP', 'SIM', 'PASPOR', 'KARTU_PELAJAR'])
-    .withMessage('Identity type must be KTP, SIM, PASPOR, or KARTU_PELAJAR'),
-  body('daftar_penumpang.*.nomor_identitas')
-    .optional({ nullable: true, checkFalsy: true }),
-  body('daftar_penumpang.*.tanggal_lahir')
-    .optional()
-    .isISO8601()
-    .withMessage('Birth date must be in valid date format'),
-  body('daftar_penumpang.*.jenis_kelamin')
-    .optional()
-    .isIn(['L', 'P'])
-    .withMessage('Gender must be L or P'),
   body('daftar_penumpang.*.nomor_kursi')
     .notEmpty()
-    .withMessage('Seat number is required'),
-  body('daftar_penumpang.*.nomor_telepon')
-    .optional()
-    .matches(/^(\+62|62|0)[0-9]{8,12}$/)
-    .withMessage('Please provide valid Indonesian phone number'),
-  body('daftar_penumpang.*.email')
-    .optional()
-    .isEmail()
-    .withMessage('Please provide valid email address')
+    .withMessage('Seat number is required')
 ];
 
 // Validation for creating pemesanan

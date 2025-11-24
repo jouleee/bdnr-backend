@@ -100,7 +100,7 @@ const getAllJadwal = async (req, res) => {
 
     // Get jadwal with populated data
     const jadwals = await Jadwal.find(filter)
-      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan tanggal_keberangkatan')
+      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')
       .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status')
       .sort({ waktu_keberangkatan: 1 })
       .skip(skip)
@@ -141,7 +141,7 @@ const getJadwalById = async (req, res) => {
     const jadwalId = req.params.id;
 
     const jadwal = await Jadwal.findById(jadwalId)
-      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan tanggal_keberangkatan')
+      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')
       .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');
 
     if (!jadwal) {
@@ -252,7 +252,7 @@ const createJadwal = async (req, res) => {
     await jadwal.save();
 
     // Populate the created jadwal
-    await jadwal.populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan tanggal_keberangkatan');
+    await jadwal.populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan');
     await jadwal.populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');
 
     console.log('✅ Jadwal created successfully:', jadwal._id);
@@ -347,7 +347,7 @@ const updateJadwal = async (req, res) => {
       updateData,
       { new: true, runValidators: true }
     )
-    .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan tanggal_keberangkatan')
+    .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')
     .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');
 
     res.json({

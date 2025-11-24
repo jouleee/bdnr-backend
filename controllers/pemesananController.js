@@ -163,7 +163,7 @@ const createPemesanan = async (req, res) => {
       catatan,
       // Auto-generate required fields
       kode_booking: `TRV${Date.now().toString().slice(-8)}${Math.random().toString(36).substring(2, 5).toUpperCase()}`,
-      batas_waktu_pembayaran: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+      batas_waktu_pembayaran: new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 hours from now
     };
 
     const pemesanan = new Pemesanan(pemesananData);
@@ -178,7 +178,7 @@ const createPemesanan = async (req, res) => {
     await pemesanan.populate({
       path: 'jadwal_id',
       populate: [
-        { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan tanggal_keberangkatan' },
+        { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },
         { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }
       ]
     });
@@ -247,7 +247,7 @@ const getPemesanan = async (req, res) => {
     await pemesanan.populate({
       path: 'jadwal_id',
       populate: [
-        { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan tanggal_keberangkatan' },
+        { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },
         { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }
       ]
     });
@@ -440,7 +440,7 @@ const getUserPemesanan = async (req, res) => {
       .populate({
         path: 'jadwal_id',
         populate: [
-          { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan tanggal_keberangkatan' },
+          { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },
           { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }
         ]
       })

@@ -9,67 +9,55 @@ const seedRute = async () => {
     await Rute.deleteMany({});
     console.log('✅ Cleared existing rute data');
 
-    // Sample route data
+    // Sample route data - routes only define locations, not dates
     const ruteData = [
       {
         lokasi_keberangkatan: 'Jakarta',
-        lokasi_tujuan: 'Bandung',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Bandung'
       },
       {
         lokasi_keberangkatan: 'Jakarta',
-        lokasi_tujuan: 'Surabaya',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Surabaya'
       },
       {
         lokasi_keberangkatan: 'Jakarta',
-        lokasi_tujuan: 'Yogyakarta',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Yogyakarta'
       },
       {
         lokasi_keberangkatan: 'Jakarta',
-        lokasi_tujuan: 'Semarang',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Semarang'
       },
       {
         lokasi_keberangkatan: 'Bandung',
-        lokasi_tujuan: 'Jakarta',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Jakarta'
       },
       {
         lokasi_keberangkatan: 'Bandung',
-        lokasi_tujuan: 'Yogyakarta',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Yogyakarta'
       },
       {
         lokasi_keberangkatan: 'Surabaya',
-        lokasi_tujuan: 'Jakarta',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Jakarta'
       },
       {
         lokasi_keberangkatan: 'Surabaya',
-        lokasi_tujuan: 'Malang',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Malang'
       },
       {
         lokasi_keberangkatan: 'Yogyakarta',
-        lokasi_tujuan: 'Jakarta',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Jakarta'
       },
       {
         lokasi_keberangkatan: 'Yogyakarta',
-        lokasi_tujuan: 'Solo',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Solo'
       },
       {
         lokasi_keberangkatan: 'Semarang',
-        lokasi_tujuan: 'Jakarta',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Jakarta'
       },
       {
         lokasi_keberangkatan: 'Malang',
-        lokasi_tujuan: 'Surabaya',
-        tanggal_keberangkatan: new Date('2024-12-25')
+        lokasi_tujuan: 'Surabaya'
       }
     ];
 

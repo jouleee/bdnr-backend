@@ -10,10 +10,6 @@ const ruteSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
-  },
-  tanggal_keberangkatan: {
-    type: Date,
-    required: true
   }
 }, {
   timestamps: true
