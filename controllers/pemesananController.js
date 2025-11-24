@@ -6,13 +6,19 @@ const User = require('../models/User');
 // @desc    Get available seats for a jadwal
 // @route   GET /api/pemesanan/jadwal/:jadwalId/seats
 // @access  Public
+// 
+// 🪑 HALAMAN PILIH KURSI (/booking/[jadwalId]) - IMPLEMENTASI DATABASE:
+// 📊 AGREGASI: Hitung kursi tersedia vs terisi, summary kapasitas total
+// 🔄 SORTING: Urutkan kursi A1, A2, A3... atau 1, 2, 3... (di frontend)
+// 🔗 JOIN: Ambil detail jadwal + rute + armada untuk info lengkap
 const getAvailableSeats = async (req, res) => {
   try {
     const { jadwalId } = req.params;
 
+    // 🔗 JOIN: Ambil jadwal dengan data rute & armada untuk seat map
     const jadwal = await Jadwal.findById(jadwalId)
-      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')
-      .populate('armada_id', 'tipe_kendaraan kapasitas');
+      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')  // 🔗 JOIN: Info rute perjalanan
+      .populate('armada_id', 'tipe_kendaraan kapasitas');         // 🔗 JOIN: Info tipe bus & kapasitas
 
     if (!jadwal) {
       return res.status(404).json({
@@ -21,31 +27,33 @@ const getAvailableSeats = async (req, res) => {
       });
     }
 
-    const availableSeats = jadwal.getAvailableSeats();
-    const seatMap = jadwal.peta_kursi.map(kursi => ({
+    // 📊 AGREGASI: Hitung & filter kursi yang tersedia dari peta kursi
+    const availableSeats = jadwal.getAvailableSeats();  // 📊 AGREGASI: Filter kursi dengan status 'TERSEDIA'
+    const seatMap = jadwal.peta_kursi.map(kursi => ({   // Transform data untuk frontend
       nomor_kursi: kursi.nomor_kursi,
       status: kursi.status_kursi,
       tersedia: kursi.status_kursi === 'TERSEDIA'
     }));
 
+    // 🪑 RESPONSE: Data lengkap untuk halaman pilih kursi
     res.json({
       success: true,
       message: 'Seat information retrieved successfully',
       data: {
-        jadwal: {
+        jadwal: {                                    // 🔗 JOIN: Data jadwal dengan relasi
           _id: jadwal._id,
-          rute: jadwal.rute_id,
-          armada: jadwal.armada_id,
+          rute: jadwal.rute_id,                      // 🔗 JOIN: Info rute perjalanan
+          armada: jadwal.armada_id,                  // 🔗 JOIN: Info armada/bus
           waktu_keberangkatan: jadwal.waktu_keberangkatan,
           harga_dasar: jadwal.harga_dasar,
           kursi_tersedia: jadwal.kursi_tersedia
         },
-        available_seats: availableSeats,
-        seat_map: seatMap,
-        summary: {
-          total_kapasitas: jadwal.armada_id.kapasitas,
-          kursi_tersedia: availableSeats.length,
-          kursi_terpesan: jadwal.armada_id.kapasitas - availableSeats.length
+        available_seats: availableSeats,             // 📊 AGREGASI: Array kursi yang bisa dipilih
+        seat_map: seatMap,                           // 🔄 SORTING: Peta kursi terurut untuk UI
+        summary: {  // 📊 AGREGASI: Summary kursi untuk UI halaman pilih kursi
+          total_kapasitas: jadwal.armada_id.kapasitas,                      // Total kursi bus
+          kursi_tersedia: availableSeats.length,                            // 📊 AGREGASI: Hitung kursi kosong
+          kursi_terpesan: jadwal.armada_id.kapasitas - availableSeats.length // 📊 AGREGASI: Hitung kursi terisi
         }
       }
     });
@@ -62,6 +70,9 @@ const getAvailableSeats = async (req, res) => {
 // @desc    Create new pemesanan
 // @route   POST /api/pemesanan
 // @access  Public
+// 
+// 📊 AGREGASI: Hitung total harga (harga_per_tiket × jumlah_penumpang)
+// 🔗 JOIN: Populate response dengan user, jadwal, rute, armada (3 level join)
 const createPemesanan = async (req, res) => {
   try {
     // Check for validation errors
@@ -90,10 +101,10 @@ const createPemesanan = async (req, res) => {
       });
     }
 
-    // Verify jadwal exists and is active
+    // 🔗 JOIN: Verify jadwal exists dengan populate rute & armada
     const jadwal = await Jadwal.findById(jadwal_id)
-      .populate('rute_id')
-      .populate('armada_id');
+      .populate('rute_id')   // 🔗 JOIN: Data rute untuk validasi
+      .populate('armada_id'); // 🔗 JOIN: Data armada untuk validasi
 
     if (!jadwal) {
       return res.status(404).json({
@@ -148,9 +159,9 @@ const createPemesanan = async (req, res) => {
       }
     }
 
-    // Calculate pricing
+    // 📊 AGREGASI: Calculate total pricing
     const hargaPerTiket = jadwal.harga_dasar;
-    const totalHarga = hargaPerTiket * jumlahPenumpang;
+    const totalHarga = hargaPerTiket * jumlahPenumpang;  // 📊 AGREGASI: Total harga = harga × jumlah penumpang
 
     // Create pemesanan
     const pemesananData = {
@@ -173,13 +184,13 @@ const createPemesanan = async (req, res) => {
     jadwal.bookSeats(requestedSeats, pemesanan._id);
     await jadwal.save();
 
-    // Populate response data
-    await pemesanan.populate('user_pemesan_id', 'name email');
+    // 🔗 JOIN: Populate response dengan data lengkap (3 level join)
+    await pemesanan.populate('user_pemesan_id', 'name email');  // 🔗 JOIN Level 1: User data
     await pemesanan.populate({
-      path: 'jadwal_id',
+      path: 'jadwal_id',                                          // 🔗 JOIN Level 2: Jadwal data
       populate: [
-        { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },
-        { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }
+        { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },   // 🔗 JOIN Level 3A: Rute data
+        { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }            // 🔗 JOIN Level 3B: Armada data
       ]
     });
 
@@ -221,6 +232,10 @@ const createPemesanan = async (req, res) => {
 // @desc    Get pemesanan by ID or booking code
 // @route   GET /api/pemesanan/:identifier
 // @access  Public
+// 
+// 🎫 HALAMAN DETAIL PEMESANAN - IMPLEMENTASI DATABASE:
+// 🔗 JOIN: 3 level join untuk data super lengkap (Pemesanan → Jadwal → Rute/Armada)
+// 📊 AGREGASI: Kalkulasi total harga, status kursi, validasi expired
 const getPemesanan = async (req, res) => {
   try {
     const { identifier } = req.params;
@@ -242,18 +257,18 @@ const getPemesanan = async (req, res) => {
       });
     }
 
-    // Populate related data
-    await pemesanan.populate('user_pemesan_id', 'name email phone');
+    // 🎫 JOIN: 3 level join untuk halaman detail pemesanan super lengkap
+    await pemesanan.populate('user_pemesan_id', 'name email phone');  // 🔗 JOIN Level 1: Data pemesan
     await pemesanan.populate({
-      path: 'jadwal_id',
+      path: 'jadwal_id',                                          // 🔗 JOIN Level 2: Data jadwal
       populate: [
-        { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },
-        { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }
+        { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },   // 🔗 JOIN Level 3A: Detail rute
+        { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }            // 🔗 JOIN Level 3B: Detail armada
       ]
     });
 
-    // Check if expired and update status
-    if (pemesanan.isExpired()) {
+    // 📊 AGREGASI: Check expired status dan update otomatis
+    if (pemesanan.isExpired()) {                    // 📊 AGREGASI: Compare current time vs deadline
       pemesanan.status_pemesanan = 'EXPIRED';
       await pemesanan.save();
       
@@ -265,12 +280,13 @@ const getPemesanan = async (req, res) => {
       }
     }
 
+    // 🎫 RESPONSE: Data lengkap untuk halaman detail pemesanan
     res.json({
       success: true,
       message: 'Pemesanan retrieved successfully',
       data: {
-        pemesanan,
-        is_expired: pemesanan.isExpired()
+        pemesanan,                                  // 🔗 JOIN: Data pemesanan dengan 3 level relasi
+        is_expired: pemesanan.isExpired()          // 📊 AGREGASI: Status expired calculation
       }
     });
 
@@ -286,6 +302,9 @@ const getPemesanan = async (req, res) => {
 // @desc    Process payment
 // @route   POST /api/pemesanan/:id/payment
 // @access  Public
+// 
+// 💳 PROSES PEMBAYARAN - IMPLEMENTASI DATABASE:
+// 📊 AGREGASI: Validasi jumlah pembayaran vs total harga pemesanan
 const processPayment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -315,11 +334,11 @@ const processPayment = async (req, res) => {
       });
     }
 
-    // Validate payment amount
-    if (jumlah_bayar < pemesanan.total_harga) {
+    // 📊 AGREGASI: Validate payment amount vs total harga
+    if (jumlah_bayar < pemesanan.total_harga) {        // 📊 AGREGASI: Compare payment vs calculated total
       return res.status(400).json({
         success: false,
-        message: 'Payment amount is insufficient'
+        message: 'Payment amount is insufficient'         // 📊 AGREGASI: Validation result
       });
     }
 
@@ -424,42 +443,52 @@ const cancelPemesanan = async (req, res) => {
 // @desc    Get user's pemesanan history
 // @route   GET /api/pemesanan/user/:userId
 // @access  Public
+// 
+// 📝 HALAMAN RIWAYAT PEMESANAN (/pemesanan) - IMPLEMENTASI DATABASE:
+// 📊 AGREGASI: Hitung total pemesanan user dengan countDocuments
+// 🔄 SORTING: Urutkan dari pemesanan terbaru (waktu_pemesanan DESC)
+// 📄 LIMIT: Tampilkan 10 riwayat per halaman dengan pagination
+// 🔗 JOIN: Pemesanan + jadwal + rute + armada (lengkap!)
 const getUserPemesanan = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { status, page = 1, limit = 10 } = req.query;
+    // 📄 LIMIT: Extract pagination dengan default 10 history per halaman
+    const { status, page = 1, limit = 10 } = req.query;  // 📄 LIMIT: Default limit
 
     const filter = { user_pemesan_id: userId };
     if (status) {
-      filter.status_pemesanan = status;
+      filter.status_pemesanan = status;  // Filter berdasarkan status jika ada
     }
 
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;  // 📄 LIMIT: Calculate pagination offset
 
+    // 🔗 JOIN + 🔄 SORTING + 📄 LIMIT: Query history dengan nested populate, sort, pagination
     const pemesananList = await Pemesanan.find(filter)
-      .populate({
-        path: 'jadwal_id',
+      .populate({                                        // 🔗 JOIN: Nested populate untuk data lengkap
+        path: 'jadwal_id',                              // 🔗 JOIN Level 1: Jadwal
         populate: [
-          { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },
-          { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }
+          { path: 'rute_id', select: 'lokasi_keberangkatan lokasi_tujuan' },   // 🔗 JOIN Level 2A: Rute
+          { path: 'armada_id', select: 'tipe_kendaraan kapasitas' }            // 🔗 JOIN Level 2B: Armada
         ]
       })
-      .sort({ waktu_pemesanan: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+      .sort({ waktu_pemesanan: -1 })                   // 🔄 SORTING: History terbaru dulu (DESC)
+      .skip(skip)                                      // 📄 LIMIT: Skip untuk pagination
+      .limit(parseInt(limit));                         // 📄 LIMIT: Batasi hasil per halaman
 
-    const total = await Pemesanan.countDocuments(filter);
+    // 📊 AGREGASI: Hitung total pemesanan untuk pagination info
+    const total = await Pemesanan.countDocuments(filter);  // 📊 AGREGASI: Count total history
 
+    // 📝 RESPONSE: Data lengkap untuk halaman riwayat pemesanan
     res.json({
       success: true,
       message: 'User pemesanan history retrieved successfully',
       data: {
-        pemesanan_list: pemesananList,
-        pagination: {
+        pemesanan_list: pemesananList,                   // 🔗 JOIN: History dengan detail lengkap
+        pagination: {                                    // 📊 AGREGASI: Pagination metadata untuk UI
           current_page: parseInt(page),
-          total_pages: Math.ceil(total / limit),
-          total_items: total,
-          items_per_page: parseInt(limit)
+          total_pages: Math.ceil(total / limit),         // 📊 AGREGASI: Total halaman (pembulatan ke atas)
+          total_items: total,                            // 📊 AGREGASI: Total riwayat dari countDocuments
+          items_per_page: parseInt(limit)                // 📄 LIMIT: 10 riwayat per halaman
         }
       }
     });

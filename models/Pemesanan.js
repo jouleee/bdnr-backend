@@ -128,13 +128,13 @@ const pemesananSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Generate kode booking unik
+// 📊 AGREGASI: Generate kode booking unik dengan timestamp + random string
 pemesananSchema.pre('validate', function(next) {
-  // Generate kode_booking if not exists
+  // 📊 AGREGASI: Generate kode_booking if not exists
   if (!this.kode_booking) {
-    const timestamp = Date.now().toString().slice(-8);
-    const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
-    this.kode_booking = `TRV${timestamp}${randomStr}`;
+    const timestamp = Date.now().toString().slice(-8);              // 📊 AGREGASI: Extract last 8 digits
+    const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();  // 📊 AGREGASI: Random string
+    this.kode_booking = `TRV${timestamp}${randomStr}`;             // 📊 AGREGASI: Combine parts
   }
   
   // Set batas_waktu_pembayaran if not exists (2 hours from now)
@@ -150,14 +150,16 @@ pemesananSchema.methods.isExpired = function() {
   return new Date() > this.batas_waktu_pembayaran && this.status_pemesanan === 'MENUNGGU_PEMBAYARAN';
 };
 
-// Method untuk menghitung total harga
+// 📊 AGREGASI: Method untuk menghitung total harga pemesanan
+// Kalkulasi: harga per tiket × jumlah penumpang
 pemesananSchema.methods.calculateTotalPrice = function() {
-  return this.harga_per_tiket * this.jumlah_penumpang;
+  return this.harga_per_tiket * this.jumlah_penumpang;  // 📊 AGREGASI: Mathematical calculation
 };
 
-// Virtual untuk mendapatkan kursi yang dipesan
+// 📊 AGREGASI: Virtual field untuk mendapatkan daftar kursi yang dipesan
+// Transform array daftar_penumpang jadi array nomor_kursi saja
 pemesananSchema.virtual('kursi_dipesan').get(function() {
-  return this.daftar_penumpang.map(p => p.nomor_kursi);
+  return this.daftar_penumpang.map(p => p.nomor_kursi);  // 📊 AGREGASI: Extract seat numbers
 });
 
 // Index untuk optimasi query
