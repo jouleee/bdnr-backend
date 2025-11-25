@@ -11,7 +11,7 @@ const Armada = require('../models/Armada');
 // 📊 AGREGASI: Hitung total jadwal yang tersedia dengan countDocuments
 // 🔄 SORTING: Urutkan berdasarkan waktu keberangkatan (paling awal dulu)
 // 📄 LIMIT: Tampilkan 10 jadwal per halaman dengan skip & limit
-// 🔗 JOIN: Gabungkan data jadwal + rute + armada untuk info lengkap
+// 🔗 Lookup: Gabungkan data jadwal + rute + armada untuk info lengkap
 const getAllJadwal = async (req, res) => {
   try {
     // 📄 LIMIT: Extract pagination parameters dengan default values
@@ -105,10 +105,10 @@ const getAllJadwal = async (req, res) => {
     // 📄 LIMIT: Calculate pagination - skip records untuk halaman sebelumnya
     const skip = (page - 1) * limit;  // 📄 LIMIT: Formula pagination (halaman 2 = skip 10 record pertama)
 
-    // 🔗 JOIN + 🔄 SORTING + 📄 LIMIT: Query dengan populate, sort, dan pagination
+    // 🔗 Lookup + 🔄 SORTING + 📄 LIMIT: Query dengan populate, sort, dan pagination
     const jadwals = await Jadwal.find(filter)
-      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')        // 🔗 JOIN: Gabungkan dengan tabel Rute
-      .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status')  // 🔗 JOIN: Gabungkan dengan tabel Armada
+      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')        // 🔗 Lookup: Gabungkan dengan tabel Rute
+      .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status')  // 🔗 Lookup: Gabungkan dengan tabel Armada
       .sort({ waktu_keberangkatan: 1 })    // 🔄 SORTING: Urutkan berdasarkan waktu keberangkatan (ASC)
       .skip(skip)                          // 📄 LIMIT: Skip data untuk pagination
       .limit(parseInt(limit));             // 📄 LIMIT: Batasi hasil maksimal per halaman
@@ -123,7 +123,7 @@ const getAllJadwal = async (req, res) => {
       success: true,
       message: jadwals.length > 0 ? 'Jadwal retrieved successfully' : 'No jadwal found',
       data: {
-        jadwals,                               // 🔗 JOIN: Jadwal dengan relasi rute & armada
+        jadwals,                               // 🔗 Lookup: Jadwal dengan relasi rute & armada
         pagination: {                          // 📊 AGREGASI: Metadata untuk pagination UI
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / limit),  // 📊 AGREGASI: Hitung total halaman (pembulatan ke atas)
@@ -145,15 +145,15 @@ const getAllJadwal = async (req, res) => {
 // @route   GET /api/jadwal/:id
 // @access  Public
 // 
-// 🔗 JOIN: Populate untuk mendapatkan detail lengkap jadwal + rute + armada
+// 🔗 Lookup: Populate untuk mendapatkan detail lengkap jadwal + rute + armada
 const getJadwalById = async (req, res) => {
   try {
     const jadwalId = req.params.id;
 
-    // 🔗 JOIN: Query jadwal dengan data relasi (rute & armada) dalam satu query
+    // 🔗 Lookup: Query jadwal dengan data relasi (rute & armada) dalam satu query
     const jadwal = await Jadwal.findById(jadwalId)
-      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')        // 🔗 JOIN: Data rute (keberangkatan & tujuan)
-      .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');  // 🔗 JOIN: Data armada (tipe bus & kapasitas)
+      .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')        // 🔗 Lookup: Data rute (keberangkatan & tujuan)
+      .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');  // 🔗 Lookup: Data armada (tipe bus & kapasitas)
 
     if (!jadwal) {
       return res.status(404).json({
@@ -190,7 +190,7 @@ const getJadwalById = async (req, res) => {
 // @route   POST /api/admin/jadwal
 // @access  Public (for now, would be admin only in production)
 // 
-// 🔗 JOIN: Populate response dengan data relasi setelah create
+// 🔗 Lookup: Populate response dengan data relasi setelah create
 const createJadwal = async (req, res) => {
   try {
     console.log('📝 CREATE JADWAL REQUEST:', {
@@ -264,9 +264,9 @@ const createJadwal = async (req, res) => {
 
     await jadwal.save();
 
-    // 🔗 JOIN: Populate jadwal yang baru dibuat dengan data relasi
-    await jadwal.populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan');        // 🔗 JOIN: Ambil data rute
-    await jadwal.populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');  // 🔗 JOIN: Ambil data armada
+    // 🔗 Lookup: Populate jadwal yang baru dibuat dengan data relasi
+    await jadwal.populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan');        // 🔗 Lookup: Ambil data rute
+    await jadwal.populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');  // 🔗 Lookup: Ambil data armada
 
     console.log('✅ Jadwal created successfully:', jadwal._id);
 
@@ -302,7 +302,7 @@ const createJadwal = async (req, res) => {
 // @route   PUT /api/admin/jadwal/:id
 // @access  Public (for now, would be admin only in production)
 // 
-// 🔗 JOIN: Update dengan populate untuk response lengkap
+// 🔗 Lookup: Update dengan populate untuk response lengkap
 const updateJadwal = async (req, res) => {
   try {
     // Check for validation errors
@@ -356,14 +356,14 @@ const updateJadwal = async (req, res) => {
       }
     }
 
-    // 🔗 JOIN: Update jadwal dan langsung populate dengan data relasi
+    // 🔗 Lookup: Update jadwal dan langsung populate dengan data relasi
     const updatedJadwal = await Jadwal.findByIdAndUpdate(
       jadwalId,
       updateData,
       { new: true, runValidators: true }  // Return updated document
     )
-    .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')        // 🔗 JOIN: Data rute terbaru
-    .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');  // 🔗 JOIN: Data armada terbaru
+    .populate('rute_id', 'lokasi_keberangkatan lokasi_tujuan')        // 🔗 Lookup: Data rute terbaru
+    .populate('armada_id', 'tipe_kendaraan kapasitas nomor_plat status');  // 🔗 Lookup: Data armada terbaru
 
     res.json({
       success: true,
