@@ -163,10 +163,29 @@ const createPemesanan = async (req, res) => {
     const hargaPerTiket = jadwal.harga_dasar;
     const totalHarga = hargaPerTiket * jumlahPenumpang;  // 📊 AGREGASI: Total harga = harga × jumlah penumpang
 
+    // Create jadwal snapshot to preserve data even if jadwal is deleted
+    const jadwalSnapshot = {
+      jadwal_id: jadwal._id,
+      waktu_keberangkatan: jadwal.waktu_keberangkatan,
+      estimasi_waktu_perjalanan: jadwal.estimasi_waktu_perjalanan,
+      harga_dasar: jadwal.harga_dasar,
+      rute: {
+        rute_id: jadwal.rute_id._id,
+        lokasi_keberangkatan: jadwal.rute_id.lokasi_keberangkatan,
+        lokasi_tujuan: jadwal.rute_id.lokasi_tujuan
+      },
+      armada: {
+        armada_id: jadwal.armada_id._id,
+        tipe_kendaraan: jadwal.armada_id.tipe_kendaraan,
+        kapasitas: jadwal.armada_id.kapasitas
+      }
+    };
+
     // Create pemesanan
     const pemesananData = {
       user_pemesan_id,
       jadwal_id,
+      jadwal_snapshot: jadwalSnapshot,
       daftar_penumpang,
       harga_per_tiket: hargaPerTiket,
       jumlah_penumpang: jumlahPenumpang,
@@ -267,12 +286,37 @@ const getPemesanan = async (req, res) => {
       ]
     });
 
+    // 📊 FALLBACK: Gunakan jadwal_snapshot jika jadwal_id sudah tidak ada (deleted)
+    const pemesananObj = pemesanan.toObject();
+    if (!pemesananObj.jadwal_id && pemesananObj.jadwal_snapshot) {
+      console.log(`📋 Using jadwal_snapshot for pemesanan ${pemesananObj.kode_booking} - original jadwal deleted`);
+      
+      // Create mock jadwal_id structure from snapshot for frontend compatibility
+      pemesananObj.jadwal_id = {
+        _id: pemesananObj.jadwal_snapshot.jadwal_id,
+        waktu_keberangkatan: pemesananObj.jadwal_snapshot.waktu_keberangkatan,
+        estimasi_waktu_perjalanan: pemesananObj.jadwal_snapshot.estimasi_waktu_perjalanan,
+        harga_dasar: pemesananObj.jadwal_snapshot.harga_dasar,
+        rute_id: {
+          _id: pemesananObj.jadwal_snapshot.rute.rute_id,
+          lokasi_keberangkatan: pemesananObj.jadwal_snapshot.rute.lokasi_keberangkatan,
+          lokasi_tujuan: pemesananObj.jadwal_snapshot.rute.lokasi_tujuan
+        },
+        armada_id: {
+          _id: pemesananObj.jadwal_snapshot.armada.armada_id,
+          tipe_kendaraan: pemesananObj.jadwal_snapshot.armada.tipe_kendaraan,
+          kapasitas: pemesananObj.jadwal_snapshot.armada.kapasitas
+        },
+        _isFromSnapshot: true // Flag untuk menandai data dari snapshot
+      };
+    }
+
     // 📊 AGREGASI: Check expired status dan update otomatis
     if (pemesanan.isExpired()) {                    // 📊 AGREGASI: Compare current time vs deadline
       pemesanan.status_pemesanan = 'EXPIRED';
       await pemesanan.save();
       
-      // Release seats
+      // Release seats hanya jika jadwal masih ada
       const jadwal = await Jadwal.findById(pemesanan.jadwal_id);
       if (jadwal) {
         jadwal.releaseSeats(pemesanan.kursi_dipesan);
@@ -285,7 +329,7 @@ const getPemesanan = async (req, res) => {
       success: true,
       message: 'Pemesanan retrieved successfully',
       data: {
-        pemesanan,                                  // 🔗 JOIN: Data pemesanan dengan 3 level relasi
+        pemesanan: pemesananObj.jadwal_id ? pemesananObj : pemesanan, // 🔗 JOIN: Data pemesanan dengan fallback snapshot
         is_expired: pemesanan.isExpired()          // 📊 AGREGASI: Status expired calculation
       }
     });
@@ -448,7 +492,7 @@ const cancelPemesanan = async (req, res) => {
 // 📊 AGREGASI: Hitung total pemesanan user dengan countDocuments
 // 🔄 SORTING: Urutkan dari pemesanan terbaru (waktu_pemesanan DESC)
 // 📄 LIMIT: Tampilkan 10 riwayat per halaman dengan pagination
-// 🔗 JOIN: Pemesanan + jadwal + rute + armada (lengkap!)
+// 🔗 JOIN: Pemesanan + jadwal + rute + armada (dengan fallback ke jadwal_snapshot)
 const getUserPemesanan = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -475,6 +519,37 @@ const getUserPemesanan = async (req, res) => {
       .skip(skip)                                      // 📄 LIMIT: Skip untuk pagination
       .limit(parseInt(limit));                         // 📄 LIMIT: Batasi hasil per halaman
 
+    // 📊 FALLBACK: Gunakan jadwal_snapshot jika jadwal_id sudah tidak ada (deleted)
+    const processedPemesananList = pemesananList.map(pemesanan => {
+      const pemesananObj = pemesanan.toObject();
+      
+      // Jika jadwal_id tidak ada (null/deleted) tapi ada jadwal_snapshot, gunakan snapshot
+      if (!pemesananObj.jadwal_id && pemesananObj.jadwal_snapshot) {
+        console.log(`📋 Using jadwal_snapshot for pemesanan ${pemesananObj.kode_booking} - original jadwal deleted`);
+        
+        // Create mock jadwal_id structure from snapshot for frontend compatibility
+        pemesananObj.jadwal_id = {
+          _id: pemesananObj.jadwal_snapshot.jadwal_id,
+          waktu_keberangkatan: pemesananObj.jadwal_snapshot.waktu_keberangkatan,
+          estimasi_waktu_perjalanan: pemesananObj.jadwal_snapshot.estimasi_waktu_perjalanan,
+          harga_dasar: pemesananObj.jadwal_snapshot.harga_dasar,
+          rute_id: {
+            _id: pemesananObj.jadwal_snapshot.rute.rute_id,
+            lokasi_keberangkatan: pemesananObj.jadwal_snapshot.rute.lokasi_keberangkatan,
+            lokasi_tujuan: pemesananObj.jadwal_snapshot.rute.lokasi_tujuan
+          },
+          armada_id: {
+            _id: pemesananObj.jadwal_snapshot.armada.armada_id,
+            tipe_kendaraan: pemesananObj.jadwal_snapshot.armada.tipe_kendaraan,
+            kapasitas: pemesananObj.jadwal_snapshot.armada.kapasitas
+          },
+          _isFromSnapshot: true // Flag untuk menandai data dari snapshot
+        };
+      }
+      
+      return pemesananObj;
+    });
+
     // 📊 AGREGASI: Hitung total pemesanan untuk pagination info
     const total = await Pemesanan.countDocuments(filter);  // 📊 AGREGASI: Count total history
 
@@ -483,7 +558,7 @@ const getUserPemesanan = async (req, res) => {
       success: true,
       message: 'User pemesanan history retrieved successfully',
       data: {
-        pemesanan_list: pemesananList,                   // 🔗 JOIN: History dengan detail lengkap
+        pemesanan_list: processedPemesananList,          // 🔗 JOIN: History dengan detail lengkap + fallback snapshot
         pagination: {                                    // 📊 AGREGASI: Pagination metadata untuk UI
           current_page: parseInt(page),
           total_pages: Math.ceil(total / limit),         // 📊 AGREGASI: Total halaman (pembulatan ke atas)

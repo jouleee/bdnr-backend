@@ -34,6 +34,54 @@ const pemesananSchema = new mongoose.Schema({
     required: true
   },
   
+  // Snapshot data jadwal untuk mencegah kehilangan data ketika jadwal dihapus
+  jadwal_snapshot: {
+    jadwal_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true
+    },
+    waktu_keberangkatan: {
+      type: Date,
+      required: true
+    },
+    estimasi_waktu_perjalanan: {
+      type: String,
+      required: true
+    },
+    harga_dasar: {
+      type: Number,
+      required: true
+    },
+    rute: {
+      rute_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+      },
+      lokasi_keberangkatan: {
+        type: String,
+        required: true
+      },
+      lokasi_tujuan: {
+        type: String,
+        required: true
+      }
+    },
+    armada: {
+      armada_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+      },
+      tipe_kendaraan: {
+        type: String,
+        required: true
+      },
+      kapasitas: {
+        type: Number,
+        required: true
+      }
+    }
+  },
+  
   // Kode booking unik
   kode_booking: {
     type: String,

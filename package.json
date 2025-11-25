@@ -11,7 +11,8 @@
     "seed:rute": "node seeders/ruteSeeder.js",
     "seed:armada": "node seeders/armadaSeeder.js",
     "seed:jadwal": "node seeders/jadwalSeeder.js",
-    "update:seats": "node seeders/updateSeats.js"
+    "update:seats": "node seeders/updateSeats.js",
+    "migrate:jadwal-snapshot": "node seeders/migrateJadwalSnapshot.js"
   },
   "keywords": [],
   "author": "",
